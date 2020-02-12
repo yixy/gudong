@@ -105,7 +105,9 @@ func mockHandler(w http.ResponseWriter, r *http.Request) {
 		log.Debug("%s : %s\r\n", key, strings.Join(values, ","))
 	}
 	log.Debug("\r\n")
-	io.Copy(os.Stdout, r.Body)
+	if log.Level < log.ERROR {
+		io.Copy(os.Stdout, r.Body)
+	}
 
 	log.Debug("\n========================================\n")
 	log.Debug("#                gudong                #\n")
