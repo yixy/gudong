@@ -25,6 +25,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/yixy/gudong/log"
+
 	"github.com/spf13/cobra"
 )
 
@@ -37,6 +39,7 @@ var HeaderFile *string
 var bodyFile *string
 var noChunked *bool
 var lineSeparate = "\n"
+var logLevel *string
 
 const WINDOWS = "windows"
 
@@ -66,6 +69,7 @@ func init() {
 	port = startCmd.Flags().StringP("port", "p", "7777", "specify http server port")
 	readTimeout = startCmd.Flags().Int64P("read-timeout", "r", 3000, "specify http server read timeout (ms)")
 	writeTimeout = startCmd.Flags().Int64P("write-timeout", "w", 3000, "specify http server write timeout (ms)")
+	logLevel = startCmd.Flags().StringP("log-level", "l", "debug", "log level should be debug,error, default is debug")
 }
 
 // startCmd represents the start command
@@ -75,7 +79,7 @@ var startCmd = &cobra.Command{
 	Long: `This tiny server print http request header and body to Standard output, 
 		and return the response specified by -H or -B flag.`,
 	Run: func(cmd *cobra.Command, args []string) {
-
+		log.SetLogLevel(strings.ToUpper(*logLevel))
 		mux := http.NewServeMux()
 		mux.HandleFunc("/", mockHandler)
 		server := http.Server{
@@ -92,27 +96,27 @@ var startCmd = &cobra.Command{
 }
 
 func mockHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("%s %s %s\r\n", r.Method, r.RequestURI, r.Proto)
+	log.Debug("%s %s %s\r\n", r.Method, r.RequestURI, r.Proto)
 	// In Golang, https://github.com/golang/go/issues/7682
 	// For incoming requests, the Host header is promoted to the
 	// Request.Host field and removed from the Header map.
-	fmt.Printf("HOST : %s\r\n", r.Host)
+	log.Debug("HOST : %s\r\n", r.Host)
 	for key, values := range r.Header {
-		fmt.Printf("%s : %s\r\n", key, strings.Join(values, ","))
+		log.Debug("%s : %s\r\n", key, strings.Join(values, ","))
 	}
-	fmt.Printf("\r\n")
+	log.Debug("\r\n")
 	io.Copy(os.Stdout, r.Body)
 
-	fmt.Println("\n========================================")
-	fmt.Println("#                gudong                #")
+	log.Debug("\n========================================\n")
+	log.Debug("#                gudong                #\n")
 	defer func() {
-		fmt.Println("========================================")
+		log.Debug("========================================\n")
 	}()
 	if *HeaderFile != "" {
 		//read headers from head-file
 		bytes, err := ioutil.ReadFile(*HeaderFile)
 		if err != nil {
-			fmt.Printf("# Error: %s\n", err.Error())
+			log.Error("# Error: %s\n", err.Error())
 			w.WriteHeader(500)
 			return
 		}
@@ -138,27 +142,27 @@ func mockHandler(w http.ResponseWriter, r *http.Request) {
 		if *noChunked {
 			bytes, err := ioutil.ReadFile(*bodyFile)
 			if err != nil {
-				fmt.Printf("# Error: %s\n", err.Error())
+				log.Error("# Error: %s\n", err.Error())
 				w.WriteHeader(500)
 				return
 			}
 			_, err = w.Write(bytes)
 			if err != nil {
-				fmt.Printf("# Error: %s\n", err.Error())
+				log.Error("# Error: %s\n", err.Error())
 				w.WriteHeader(500)
 				return
 			}
 		} else {
 			file, err := os.Open(*bodyFile)
 			if err != nil {
-				fmt.Printf("# Error: %s\n", err.Error())
+				log.Error("# Error: %s\n", err.Error())
 				w.WriteHeader(500)
 				return
 			}
 			defer file.Close()
 			_, err = io.Copy(w, file)
 			if err != nil {
-				fmt.Printf("# Error: %s\n", err.Error())
+				log.Error("# Error: %s\n", err.Error())
 				w.WriteHeader(500)
 				return
 			}
@@ -167,7 +171,7 @@ func mockHandler(w http.ResponseWriter, r *http.Request) {
 		//read body from string specified by -B flag
 		_, err := w.Write([]byte(*body))
 		if err != nil {
-			fmt.Printf("# Error: %s\n", err.Error())
+			log.Error("# Error: %s\n", err.Error())
 			w.WriteHeader(500)
 			return
 		}
