@@ -40,6 +40,7 @@ var bodyFile *string
 var noChunked *bool
 var lineSeparate = "\n"
 var logLevel *string
+var delay *int64
 
 const WINDOWS = "windows"
 
@@ -70,6 +71,7 @@ func init() {
 	readTimeout = startCmd.Flags().Int64P("read-timeout", "r", 3000, "specify http server read timeout (ms)")
 	writeTimeout = startCmd.Flags().Int64P("write-timeout", "w", 3000, "specify http server write timeout (ms)")
 	logLevel = startCmd.Flags().StringP("log-level", "l", "debug", "log level should be debug,error, default is debug")
+	delay = startCmd.Flags().Int64P("delay", "d", 1000, "response delay time (time unit is ms)")
 }
 
 // startCmd represents the start command
@@ -114,6 +116,7 @@ func mockHandler(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		log.Debug("========================================\n")
 	}()
+	time.Sleep(time.Duration(*delay) * time.Millisecond)
 	if *HeaderFile != "" {
 		//read headers from head-file
 		bytes, err := ioutil.ReadFile(*HeaderFile)
