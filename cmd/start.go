@@ -143,9 +143,23 @@ func mockHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if *bodyFile != "" {
+
+		files:=strings.Split(*bodyFile,",")
+		file:=files[0]
+		path:=r.URL.Path
+		path=path[1:]
+		log.Debug(path)
+		for _,f := range files{
+			if f==path{
+				file=f
+			}
+			log.Debug(f)
+		}
+		log.Debug(file)
+
 		//read body from body-file
 		if *noChunked {
-			bytes, err := ioutil.ReadFile(*bodyFile)
+			bytes, err := ioutil.ReadFile(file)
 			if err != nil {
 				log.Error("# Error: %s\n", err.Error())
 				w.WriteHeader(500)
@@ -158,7 +172,7 @@ func mockHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		} else {
-			file, err := os.Open(*bodyFile)
+			file, err := os.Open(file)
 			if err != nil {
 				log.Error("# Error: %s\n", err.Error())
 				w.WriteHeader(500)
